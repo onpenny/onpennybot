@@ -108,6 +108,13 @@ export default async function InheritancePage() {
                       </p>
                     )}
                   </div>
+                  <div className="flex gap-2 mt-4">
+                    <Link href={`/dashboard/inheritance/${inheritance.id}/edit`} className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full">
+                        編輯
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             ))}
