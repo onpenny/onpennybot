@@ -6,8 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
 }
 
 // ============================================
@@ -28,8 +27,6 @@ model User {
   wills         Will[]
   inheritances  Inheritance[]  @relation("Heir")
   notifications Notification[]
-
-  @@index([email])
 }
 
 // ============================================
@@ -51,15 +48,14 @@ model FamilyMember {
   children     FamilyMember[]   @relation("FamilyTree")
   spouseId     String?
   spouse       FamilyMember?    @relation("Spouses", fields: [spouseId], references: [id])
+  spousedBy    FamilyMember[]   @relation("Spouses")
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
-  // Relations
   inheritances Inheritance[]
 
   @@index([userId])
   @@index([parentId])
-  @@index([spouseId])
 }
 
 enum RelationshipType {
@@ -84,14 +80,13 @@ model Asset {
   currency      String?        @default("USD")
   location      AssetLocation
   institution   String?
-  accountNumber String         // Encrypted
+  accountNumber String
   isEncrypted   Boolean        @default(true)
-  documents     String[]       // S3 URLs
-  tags          String[]
+  documents     String?        // JSON string of S3 URLs
+  tags          String?        // JSON string of tags
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  // Relations
   inheritances  Inheritance[]
 
   @@index([userId])
@@ -127,7 +122,7 @@ model Inheritance {
   asset             Asset             @relation(fields: [assetId], references: [id], onDelete: Cascade)
   heirId            String
   heir              FamilyMember      @relation(fields: [heirId], references: [id])
-  userId            String            // User who created this inheritance rule
+  userId            String
   user              User              @relation("Heir", fields: [userId], references: [id])
   percentage        Float
   conditions        String?
@@ -159,7 +154,7 @@ model Will {
   userId         String
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title          String
-  content        String   @db.Text
+  content        String
   jurisdiction   String?
   isSigned       Boolean  @default(false)
   signedAt       DateTime?
@@ -182,7 +177,7 @@ model Notification {
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      NotificationType
   title     String
-  message   String           @db.Text
+  message   String
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
 
@@ -202,16 +197,16 @@ enum NotificationType {
 // ============================================
 
 model Donation {
-  id          String          @id @default(cuid())
-  userId      String
-  assetId     String
+  id           String         @id @default(cuid())
+  userId       String
+  assetId      String
   organization String
-  amount      Float?
-  currency    String?         @default("USD")
-  status      DonationStatus  @default(PENDING)
-  documentUrl String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  amount       Float?
+  currency     String?        @default("USD")
+  status       DonationStatus @default(PENDING)
+  documentUrl  String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@index([userId])
   @@index([assetId])
