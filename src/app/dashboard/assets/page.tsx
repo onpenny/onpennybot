@@ -49,19 +49,23 @@ function AssetsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="bg-white border-b">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="text-xl font-bold">
-                OnHeritage
+              <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-bold px-4 py-2 rounded-lg shadow-md">
+                  OnHeritage
+                </div>
               </Link>
-              <span className="text-muted-foreground">/</span>
-              <span className="font-semibold">資產管理</span>
+              <span className="text-slate-400">/</span>
+              <span className="text-lg font-semibold text-slate-700">資產管理</span>
             </div>
             <Link href="/dashboard/assets/new">
-              <Button>+ 添加資產</Button>
+              <Button className="h-12 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg transition-all">
+                + 添加資產
+              </Button>
             </Link>
           </div>
         </div>
@@ -69,25 +73,28 @@ function AssetsContent() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">資產管理</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-4xl font-bold text-slate-800 mb-3">
+            資產管理
+          </h1>
+          <p className="text-xl text-slate-600">
             管理您的所有資產
           </p>
         </div>
 
         {/* 搜索和过滤器 */}
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-          <div className="grid md:grid-cols-3 gap-4">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+          <div className="grid md:grid-cols-3 gap-6">
             <Input
               placeholder="搜索資產名稱、機構..."
               value={filters.search}
               onChange={(e) => updateFilters("search", e.target.value)}
+              className="h-12 text-lg border-2 border-slate-200 focus:border-indigo-500"
             />
 
             <select
               value={filters.category}
               onChange={(e) => updateFilters("category", e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+              className="flex h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               <option value="ALL">全部類別</option>
               <option value="BANK">銀行賬戶</option>
@@ -105,7 +112,7 @@ function AssetsContent() {
             <select
               value={filters.location}
               onChange={(e) => updateFilters("location", e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+              className="flex h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               <option value="ALL">全部位置</option>
               <option value="DOMESTIC">本地</option>
@@ -115,71 +122,81 @@ function AssetsContent() {
         </div>
 
         {/* 过滤结果统计 */}
-        <div className="mb-4">
-          <p className="text-sm text-muted-foreground">
-            {loading ? "搜索中..." : `共找到 ${assets.length} 個資產`}
-          </p>
+        <div className="mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-full">
+            <span className="text-sm text-slate-600">找到</span>
+            <span className="text-2xl font-bold text-indigo-600">{assets.length}</span>
+            <span className="text-sm text-slate-600">個資產</span>
+          </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <p>加載中...</p>
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
           </div>
         ) : assets.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <span className="text-6xl mb-4">📦</span>
-              <h3 className="text-xl font-semibold mb-2">沒有找到資產</h3>
-              <p className="text-muted-foreground mb-4">
+          <Card className="border-2 border-slate-200">
+            <CardContent className="flex flex-col items-center justify-center py-20">
+              <div className="bg-gradient-to-br from-slate-100 to-slate-200 w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg">
+                <span className="text-5xl">📦</span>
+              </div>
+              <h3 className="text-2xl font-semibold text-slate-800 mb-3">
+                沒有找到資產
+              </h3>
+              <p className="text-lg text-slate-600 mb-6">
                 調整搜索條件或添加新資產
               </p>
               <Link href="/dashboard/assets/new">
-                <Button>添加資產</Button>
+                <Button className="h-14 px-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg transition-all">
+                  添加第一個資產
+                </Button>
               </Link>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {assets.map((asset) => (
-              <Card key={asset.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg">{asset.name}</CardTitle>
-                    <Badge variant={asset.location === "DOMESTIC" ? "default" : "secondary"}>
-                      {asset.location === "DOMESTIC" ? "本地" : "海外"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">類別</span>
-                      <Badge variant="outline">{asset.category}</Badge>
+              <Link href={`/dashboard/assets/${asset.id}/edit`} key={asset.id} className="group">
+                <Card className="h-full border-2 border-slate-100 hover:border-indigo-300 hover:shadow-xl transition-all hover:-translate-y-1 bg-white">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                        {asset.name}
+                      </CardTitle>
+                      <Badge 
+                        variant={asset.location === "DOMESTIC" ? "default" : "secondary"}
+                        className={asset.location === "DOMESTIC" ? "bg-emerald-500 text-white" : "bg-blue-500 text-white"}
+                      >
+                        {asset.location === "DOMESTIC" ? "本地" : "海外"}
+                      </Badge>
                     </div>
-                    {asset.value && (
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">價值</span>
-                        <span className="font-semibold">
-                          {asset.currency} {asset.value.toLocaleString()}
-                        </span>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-base text-slate-600 font-medium">類別</span>
+                        <Badge variant="outline" className="text-sm">
+                          {asset.category}
+                        </Badge>
                       </div>
-                    )}
-                    {asset.institution && (
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">機構</span>
-                        <span className="text-sm">{asset.institution}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <Link href={`/dashboard/assets/${asset.id}/edit`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full">
-                        編輯
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+                      {asset.value && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-base text-slate-600 font-medium">價值</span>
+                          <span className="text-xl font-bold text-slate-800">
+                            {asset.currency} {asset.value.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {asset.institution && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-base text-slate-600 font-medium">機構</span>
+                          <span className="text-base text-slate-700">{asset.institution}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         )}
@@ -190,7 +207,9 @@ function AssetsContent() {
 
 export default function AssetsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">加載中...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent"></div>
+    </div>}>
       <AssetsContent />
     </Suspense>
   );

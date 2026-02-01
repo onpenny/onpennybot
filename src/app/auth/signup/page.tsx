@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -51,7 +51,6 @@ export default function SignUpPage() {
         return;
       }
 
-      // 注册成功，跳转到登录页
       router.push("/auth/signin?registered=true");
     } catch (err) {
       setError("註冊失敗，請稍後再試");
@@ -60,18 +59,29 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">註冊 OnHeritage</CardTitle>
-          <p className="text-center text-sm text-muted-foreground">
-            開始管理您的資產與遺產
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0">
+        <CardHeader className="space-y-1 pb-8">
+          <div className="text-center">
+            <div className="inline-block mb-4">
+              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-3xl font-bold px-6 py-2 rounded-xl">
+                OnHeritage
+              </div>
+            </div>
+            <CardTitle className="text-3xl font-bold text-slate-800">
+              創建賬戶
+            </CardTitle>
+            <p className="text-slate-600 text-lg">
+              開始您的遺產管理之旅
+            </p>
+          </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">姓名</Label>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-3">
+              <Label htmlFor="name" className="text-base font-semibold text-slate-700">
+                姓名
+              </Label>
               <Input
                 id="name"
                 type="text"
@@ -79,10 +89,14 @@ export default function SignUpPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                className="h-12 text-lg border-2 border-slate-200 focus:border-indigo-500"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">電子郵件</Label>
+
+            <div className="space-y-3">
+              <Label htmlFor="email" className="text-base font-semibold text-slate-700">
+                電子郵件
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -90,10 +104,14 @@ export default function SignUpPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-12 text-lg border-2 border-slate-200 focus:border-indigo-500"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">密碼</Label>
+
+            <div className="space-y-3">
+              <Label htmlFor="password" className="text-base font-semibold text-slate-700">
+                密碼
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -101,10 +119,17 @@ export default function SignUpPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="h-12 text-lg border-2 border-slate-200 focus:border-indigo-500"
               />
+              <p className="text-xs text-slate-500 mt-1">
+                密碼將被加密存儲
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">確認密碼</Label>
+
+            <div className="space-y-3">
+              <Label htmlFor="confirmPassword" className="text-base font-semibold text-slate-700">
+                確認密碼
+              </Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -112,30 +137,33 @@ export default function SignUpPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                className="h-12 text-lg border-2 border-slate-200 focus:border-indigo-500"
               />
             </div>
+
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg transition-all"
               disabled={loading}
             >
               {loading ? "註冊中..." : "註冊"}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
+        <CardContent className="flex justify-center pb-8 pt-4 border-t border-slate-100">
+          <p className="text-slate-600">
             已有賬號？{" "}
-            <Link href="/auth/signin" className="text-primary hover:underline">
-              登入
+            <Link href="/auth/signin" className="text-indigo-600 font-semibold hover:text-indigo-700 hover:underline transition-colors">
+              立即登入
             </Link>
           </p>
-        </CardFooter>
+        </CardContent>
       </Card>
     </div>
   );

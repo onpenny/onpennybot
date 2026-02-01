@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -53,18 +53,29 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">登入 OnHeritage</CardTitle>
-          <CardDescription className="text-center">
-            管理您的資產與遺產
-          </CardDescription>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0">
+        <CardHeader className="space-y-1 pb-8">
+          <div className="text-center">
+            <div className="inline-block mb-4">
+              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-3xl font-bold px-6 py-2 rounded-xl">
+                OnHeritage
+              </div>
+            </div>
+            <CardTitle className="text-3xl font-bold text-slate-800">
+              歡迎回來
+            </CardTitle>
+            <p className="text-slate-600 text-lg">
+              登入您的賬戶
+            </p>
+          </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">電子郵件</Label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="email" className="text-base font-semibold text-slate-700">
+                電子郵件
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -72,16 +83,20 @@ export default function SignInPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-12 text-lg border-2 border-slate-200 focus:border-indigo-500"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">密碼</Label>
+            <div className="space-y-3">
+              <Label htmlFor="password" className="text-base font-semibold text-slate-700">
+                密碼
+              </Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="h-12 text-lg border-2 border-slate-200 focus:border-indigo-500"
               />
             </div>
             {error && (
@@ -91,18 +106,18 @@ export default function SignInPage() {
             )}
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg transition-all"
               disabled={loading}
             >
               {loading ? "登入中..." : "登入"}
             </Button>
           </form>
-          <div className="relative my-6">
+          <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+              <span className="w-full border-t-2 border-slate-200"></span>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+            <div className="relative flex justify-center">
+              <span className="bg-white px-4 text-sm font-semibold text-slate-500">
                 或
               </span>
             </div>
@@ -110,11 +125,11 @@ export default function SignInPage() {
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full h-14 text-lg font-semibold border-2 border-slate-200 hover:border-indigo-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-3"
             onClick={handleGoogleSignIn}
             disabled={loading}
           >
-            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -134,15 +149,15 @@ export default function SignInPage() {
             </svg>
             使用 Google 登入
           </Button>
+          <div className="text-center mt-6">
+            <p className="text-slate-600">
+              還沒有賬號？{" "}
+              <Link href="/auth/signup" className="text-indigo-600 font-semibold hover:text-indigo-700 hover:underline transition-colors">
+                立即註冊
+              </Link>
+            </p>
+          </div>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
-            還沒有賬號？{" "}
-            <Link href="/auth/signup" className="text-primary hover:underline">
-              註冊
-            </Link>
-          </p>
-        </CardFooter>
       </Card>
     </div>
   );
