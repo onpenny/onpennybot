@@ -44,13 +44,20 @@ export default async function DashboardPage() {
               <span className="text-lg font-semibold text-slate-700">儀表板</span>
             </div>
             <div className="flex items-center gap-3">
+              <a
+                href="/api/export"
+                className="h-10 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+              >
+                <span className="text-lg">📊</span>
+                導出數據
+              </a>
               <span className="text-sm text-slate-500 hidden md:block">
                 {session.user.name}
               </span>
               <form action="/api/auth/signout" method="POST">
                 <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-slate-100">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 17V7m0 10l2-2m-2 2l-2-2M9 19V5m0 10h6a3 3 0 013 0v-10a3 3 0 01-3 0h-6a3 3 0 010-3v10a3 3 0 013 0h-6a3 3 0 010-3V4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 17V7m0 10l2 2m-2 2l-2 2M9 19V5m0 10h6a3 3 0 013 0v-10a3 3 0 01-3 0h-6a3 3 0 010-3v10a3 3 0 013 0h-6a3 3 0 010-3V4" />
                   </svg>
                 </Button>
               </form>
@@ -70,55 +77,37 @@ export default async function DashboardPage() {
         </div>
 
         {/* 统计概览 */}
-        <Card className="mb-8 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-0">
+        <Card className="mb-10 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-0">
           <CardHeader>
-            <CardTitle className="text-3xl font-bold flex items-center gap-3">
-              <span>📊</span>
-              總覽
-            </CardTitle>
+            <CardTitle className="text-3xl font-bold">總覽</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow">
-                <div className="text-7xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
-                  {assetsCount}
-                </div>
-                <p className="text-slate-600 font-medium text-xl">資產</p>
-                <p className="text-slate-400 text-sm mt-1">
-                  總價值：{currency} {totalValue.toLocaleString()}
-                </p>
+              <div className="text-center p-8 bg-white rounded-2xl shadow-md">
+                <div className="text-7xl font-bold text-indigo-600 mb-2">{assetsCount}</div>
+                <p className="text-slate-600 font-medium text-lg">資產</p>
               </div>
-              <div className="text-center p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow">
-                <div className="text-7xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
-                  {familyCount}
-                </div>
-                <p className="text-slate-600 font-medium text-xl">家族成員</p>
+              <div className="text-center p-8 bg-white rounded-2xl shadow-md">
+                <div className="text-7xl font-bold text-emerald-600 mb-2">{familyCount}</div>
+                <p className="text-slate-600 font-medium text-lg">家族成員</p>
               </div>
-              <div className="text-center p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow">
-                <div className="text-7xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-3">
-                  {willsCount}
-                </div>
-                <p className="text-slate-600 font-medium text-xl">遺囑</p>
+              <div className="text-center p-8 bg-white rounded-2xl shadow-md">
+                <div className="text-7xl font-bold text-amber-600 mb-2">{willsCount}</div>
+                <p className="text-slate-600 font-medium text-lg">遺囑</p>
               </div>
             </div>
             <div className="grid md:grid-cols-3 gap-8 mt-6">
               <div className="text-center p-6 bg-white rounded-2xl shadow-md">
-                <div className="text-4xl font-bold text-purple-600 mb-2">
-                  {inheritanceCount}
-                </div>
+                <div className="text-6xl font-bold text-purple-600 mb-2">{inheritanceCount}</div>
                 <p className="text-slate-600 font-medium text-lg">繼承規則</p>
               </div>
               <div className="text-center p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border-2 border-purple-100">
-                <div className="text-4xl font-bold text-slate-800 mb-2">
-                  {assetsCount > 0 ? Math.round(totalValue / assetsCount) : 0}
-                </div>
-                <p className="text-slate-600 text-sm">平均資產價值</p>
+                <div className="text-5xl font-bold text-slate-800 mb-2">{totalValue.toLocaleString()}</div>
+                <p className="text-slate-600 font-medium">總資產價值</p>
               </div>
               <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border-2 border-blue-100">
-                <div className="text-4xl font-bold text-slate-800 mb-2">
-                  {new Date().toLocaleDateString("zh-TW")}
-                </div>
-                <p className="text-slate-600 text-sm">上次更新</p>
+                <div className="text-5xl font-bold text-slate-800 mb-2">{assetsCount > 0 ? Math.round(totalValue / assetsCount) : 0}</div>
+                <p className="text-slate-600 font-medium">平均資產價值</p>
               </div>
             </div>
           </CardContent>
@@ -141,7 +130,7 @@ export default async function DashboardPage() {
                 <div className="mt-4 flex items-center gap-2 text-sm text-indigo-600 font-semibold">
                   <span>{assetsCount} 個資產</span>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7-7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7" />
                   </svg>
                 </div>
               </CardContent>
@@ -163,7 +152,7 @@ export default async function DashboardPage() {
                 <div className="mt-4 flex items-center gap-2 text-sm text-blue-600 font-semibold">
                   <span>{familyCount} 位成員</span>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7-7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7" />
                   </svg>
                 </div>
               </CardContent>
@@ -185,7 +174,7 @@ export default async function DashboardPage() {
                 <div className="mt-4 flex items-center gap-2 text-sm text-amber-600 font-semibold">
                   <span>{willsCount} 份遺囑</span>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7-7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7" />
                   </svg>
                 </div>
               </CardContent>
@@ -207,7 +196,7 @@ export default async function DashboardPage() {
                 <div className="mt-4 flex items-center gap-2 text-sm text-purple-600 font-semibold">
                   <span>{inheritanceCount} 條規則</span>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7-7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7" />
                   </svg>
                 </div>
               </CardContent>
@@ -215,16 +204,24 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
+        <div className="flex gap-4 mt-8">
+          <Link href="/dashboard/settings" className="flex-1">
+            <Button className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-slate-600 to-slate-800 hover:shadow-xl transition-all">
+              ⚙️ 賬戶設置
+            </Button>
+          </Link>
+        </div>
+
         {/* 开始提示 - 只对新用户显示 */}
-        {(session.user.name === "OnPenny Test User" || session.user.email === "onpenny@gmail.com" || assetsCount === 0) && (
+        {session.user.name === "OnPenny Test User" || session.user.email === "onpenny@gmail.com" || assetsCount === 0 ? (
           <Card className="bg-gradient-to-r from-amber-50 to-amber-100 border-2 border-amber-200">
             <CardHeader>
               <CardTitle className="text-2xl font-bold text-amber-800 flex items-center gap-3">
-                <span className="text-4xl">🚀</span>
+                <span>💡</span>
                 歡迎開始使用
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <div className="bg-white p-6 rounded-2xl">
                 <p className="text-slate-700 font-semibold text-lg mb-4">
                   您還沒有添加任何資產，這是開始的好地方！
@@ -268,7 +265,7 @@ export default async function DashboardPage() {
               </div>
               <div className="flex gap-4">
                 <Link href="/dashboard/assets/new" className="flex-1">
-                  <Button className="h-16 text-xl font-bold w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:shadow-xl hover:scale-105 transition-all">
+                  <Button className="h-16 text-xl font-bold w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:shadow-xl transition-all">
                     立即添加資產
                   </Button>
                 </Link>
@@ -280,7 +277,7 @@ export default async function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-        )}
+        ) : null}
       </main>
     </div>
   );
