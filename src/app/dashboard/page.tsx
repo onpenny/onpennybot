@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard, ProgressBar, DonutChart } from "@/components/charts/Charts";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -23,11 +24,52 @@ export default async function DashboardPage() {
   // 获取资产总价值
   const assets = await prisma.asset.findMany({
     where: { userId: session.user.id },
-    select: { value: true, currency: true },
+    select: { value: true, currency: true, category: true },
   });
 
   const totalValue = assets.reduce((sum, asset) => sum + (asset.value || 0), 0);
   const currency = assets.length > 0 ? assets[0].currency : "MOP";
+
+  // 按类别统计资产数量和价值
+  const categoryStats = assets.reduce((acc: any, asset) => {
+    if (!acc[asset.category]) {
+      acc[asset.category] = { count: 0, value: 0 };
+    }
+    acc[asset.category].count += 1;
+    acc[asset.category].value += asset.value || 0;
+    return acc;
+  }, {});
+
+  // 统计已签名和未签名的遗嘱
+  const wills = await prisma.will.findMany({
+    where: { userId: session.user.id },
+    select: { isSigned: true, isWitnessed: true },
+  });
+
+  const signedWills = wills.filter((will) => will.isSigned).length;
+  const totalWills = wills.length;
+
+  // 统计在世和已故家族成员
+  const familyMembers = await prisma.familyMember.findMany({
+    where: { userId: session.user.id },
+    select: { isAlive: true },
+  });
+
+  const aliveMembers = familyMembers.filter((member) => member.isAlive).length;
+  const totalMembers = familyMembers.length;
+
+  // 统计继承规则状态
+  const inheritances = await prisma.inheritance.findMany({
+    where: { userId: session.user.id },
+    select: { status: true },
+  });
+
+  const inheritanceStats = {
+    PENDING: inheritances.filter((i) => i.status === "PENDING").length,
+    IN_PROGRESS: inheritances.filter((i) => i.status === "IN_PROGRESS").length,
+    COMPLETED: inheritances.filter((i) => i.status === "COMPLETED").length,
+    DISPUTED: inheritances.filter((i) => i.status === "DISPUTED").length,
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
@@ -57,7 +99,7 @@ export default async function DashboardPage() {
               <form action="/api/auth/signout" method="POST">
                 <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-slate-100">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 17V7m0 10l2 2m-2 2l-2 2M9 19V5m0 10h6a3 3 0 013 0v-10a3 3 0 01-3 0h-6a3 3 0 010-3v10a3 3 0 013 0h-6a3 3 0 010-3V4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 17V7m0 10l2-2m-2 2l-2-2M9 19V5m0 10h6a3 3 0 013 0v-10a3 3 0 01-3 0h-6a3 3 0 010-3v10a3 3 0 013 0h-6a3 3 0 010-3V4" />
                   </svg>
                 </Button>
               </form>
@@ -76,39 +118,104 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {/* 统计概览 */}
+        {/* 数据可视化 */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <StatCard
+            title="資產"
+            value={assetsCount}
+            label="總數量"
+            color="bg-gradient-to-br from-indigo-500 to-indigo-600"
+            icon="💰"
+          />
+
+          <StatCard
+            title="家族成員"
+            value={familyCount}
+            label="總數量"
+            color="bg-gradient-to-br from-blue-500 to-blue-600"
+            icon="👨‍👩‍👧‍👦"
+          />
+
+          <StatCard
+            title="遺囑"
+            value={willsCount}
+            label="總數量"
+            color="bg-gradient-to-br from-amber-500 to-amber-600"
+            icon="📜"
+          />
+
+          <StatCard
+            title="繼承規則"
+            value={inheritanceCount}
+            label="總數量"
+            color="bg-gradient-to-br from-purple-500 to-purple-600"
+            icon="🎯"
+          />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-10">
+          <DonutChart
+            title="資產類別分布"
+            data={Object.keys(categoryStats).map((category) => ({
+              label: category,
+              value: categoryStats[category].count,
+              color: category === "BANK" ? "bg-blue-500" :
+                     category === "INSURANCE" ? "bg-emerald-500" :
+                     category === "BROKERAGE" ? "bg-purple-500" :
+                     category === "FUND" ? "bg-amber-500" :
+                     category === "REAL_ESTATE" ? "bg-pink-500" :
+                     category === "CRYPTOCURRENCY" ? "bg-indigo-500" :
+                     category === "STOCK" ? "bg-orange-500" :
+                     category === "COLLECTION" ? "bg-teal-500" :
+                     "bg-slate-500",
+            }))}
+          />
+
+          <DonutChart
+            title="繼承規則狀態"
+            data={[
+              { label: "待處理", value: inheritanceStats.PENDING, color: "bg-slate-500" },
+              { label: "進行中", value: inheritanceStats.IN_PROGRESS, color: "bg-blue-500" },
+              { label: "已完成", value: inheritanceStats.COMPLETED, color: "bg-emerald-500" },
+              { label: "糾紛中", value: inheritanceStats.DISPUTED, color: "bg-red-500" },
+            ]}
+          />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-10">
+          <ProgressBar
+            value={aliveMembers}
+            max={totalMembers}
+            label="在世成員佔比"
+            color="bg-gradient-to-r from-blue-500 to-blue-600"
+            icon="👤"
+          />
+
+          <ProgressBar
+            value={signedWills}
+            max={totalWills}
+            label="已簽署遺囑佔比"
+            color="bg-gradient-to-r from-amber-500 to-amber-600"
+            icon="📜"
+          />
+        </div>
+
+        {/* 总价值卡片 */}
         <Card className="mb-10 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-0">
           <CardHeader>
-            <CardTitle className="text-3xl font-bold">總覽</CardTitle>
+            <CardTitle className="text-3xl font-bold flex items-center gap-3">
+              <span>💎</span>
+              資產總價值
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center p-8 bg-white rounded-2xl shadow-md">
-                <div className="text-7xl font-bold text-indigo-600 mb-2">{assetsCount}</div>
-                <p className="text-slate-600 font-medium text-lg">資產</p>
+            <div className="text-center p-8">
+              <div className="text-6xl font-bold text-slate-800 mb-4">
+                {currency} {totalValue.toLocaleString()}
               </div>
-              <div className="text-center p-8 bg-white rounded-2xl shadow-md">
-                <div className="text-7xl font-bold text-emerald-600 mb-2">{familyCount}</div>
-                <p className="text-slate-600 font-medium text-lg">家族成員</p>
-              </div>
-              <div className="text-center p-8 bg-white rounded-2xl shadow-md">
-                <div className="text-7xl font-bold text-amber-600 mb-2">{willsCount}</div>
-                <p className="text-slate-600 font-medium text-lg">遺囑</p>
-              </div>
-            </div>
-            <div className="grid md:grid-cols-3 gap-8 mt-6">
-              <div className="text-center p-6 bg-white rounded-2xl shadow-md">
-                <div className="text-6xl font-bold text-purple-600 mb-2">{inheritanceCount}</div>
-                <p className="text-slate-600 font-medium text-lg">繼承規則</p>
-              </div>
-              <div className="text-center p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border-2 border-purple-100">
-                <div className="text-5xl font-bold text-slate-800 mb-2">{totalValue.toLocaleString()}</div>
-                <p className="text-slate-600 font-medium">總資產價值</p>
-              </div>
-              <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border-2 border-blue-100">
-                <div className="text-5xl font-bold text-slate-800 mb-2">{assetsCount > 0 ? Math.round(totalValue / assetsCount) : 0}</div>
-                <p className="text-slate-600 font-medium">平均資產價值</p>
-              </div>
+              <p className="text-slate-600 text-lg">
+                所有資產的總估值
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -204,60 +311,52 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        <div className="flex gap-4 mt-8">
-          <Link href="/dashboard/settings" className="flex-1">
-            <Button className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-slate-600 to-slate-800 hover:shadow-xl transition-all">
-              ⚙️ 賬戶設置
-            </Button>
-          </Link>
-        </div>
-
         {/* 开始提示 - 只对新用户显示 */}
-        {session.user.name === "OnPenny Test User" || session.user.email === "onpenny@gmail.com" || assetsCount === 0 ? (
+        {(session.user.name === "OnPenny Test User" || session.user.email === "onpenny@gmail.com" || assetsCount === 0) && (
           <Card className="bg-gradient-to-r from-amber-50 to-amber-100 border-2 border-amber-200">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-amber-800 flex items-center gap-3">
-                <span>💡</span>
+              <CardTitle className="text-3xl font-bold text-amber-800 flex items-center gap-3">
+                <span className="text-5xl">🚀</span>
                 歡迎開始使用
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-white p-6 rounded-2xl">
-                <p className="text-slate-700 font-semibold text-lg mb-4">
+            <CardContent className="space-y-6">
+              <div className="bg-white p-8 rounded-2xl">
+                <p className="text-slate-700 text-2xl font-bold mb-6">
                   您還沒有添加任何資產，這是開始的好地方！
                 </p>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-emerald-500 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 mt-1">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-emerald-500 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <p className="text-slate-600 leading-relaxed">
-                      <span className="font-semibold text-slate-800">第一步：</span>
+                    <p className="text-slate-700 text-xl leading-relaxed flex-1">
+                      <span className="font-bold text-slate-900 text-2xl">第一步：</span>
                       添加您的第一個資產（銀行賬戶、保險等）
                     </p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 mt-1">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
                         <circle cx="12" cy="7" r="4" />
                       </svg>
                     </div>
-                    <p className="text-slate-600 leading-relaxed">
-                      <span className="font-semibold text-slate-800">第二步：</span>
+                    <p className="text-slate-700 text-xl leading-relaxed flex-1">
+                      <span className="font-bold text-slate-900 text-2xl">第二步：</span>
                       添加家族成員建立譜系
                     </p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 mt-1">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-purple-500 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <p className="text-slate-600 leading-relaxed">
-                      <span className="font-semibold text-slate-800">第三步：</span>
+                    <p className="text-slate-700 text-xl leading-relaxed flex-1">
+                      <span className="font-bold text-slate-900 text-2xl">第三步：</span>
                       設定遺囑和繼承規則
                     </p>
                   </div>
@@ -265,19 +364,27 @@ export default async function DashboardPage() {
               </div>
               <div className="flex gap-4">
                 <Link href="/dashboard/assets/new" className="flex-1">
-                  <Button className="h-16 text-xl font-bold w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:shadow-xl transition-all">
+                  <Button className="h-16 text-2xl font-bold w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:shadow-2xl hover:scale-105 transition-all">
                     立即添加資產
                   </Button>
                 </Link>
                 <Link href="/dashboard/family/new" className="flex-1">
-                  <Button variant="outline" className="h-16 text-xl font-bold w-full border-2 border-amber-300 hover:border-amber-400 hover:bg-amber-50 transition-all">
+                  <Button variant="outline" className="h-16 text-2xl font-bold w-full border-2 border-amber-300 hover:border-amber-400 hover:bg-amber-50 transition-all">
                     添加家族成員
                   </Button>
                 </Link>
               </div>
             </CardContent>
           </Card>
-        ) : null}
+        )}
+
+        <div className="flex gap-4">
+          <Link href="/dashboard/settings" className="flex-1">
+            <Button className="h-14 text-lg font-semibold bg-gradient-to-r from-slate-600 to-slate-800 hover:shadow-xl transition-all">
+              ⚙️ 賬戶設置
+            </Button>
+          </Link>
+        </div>
       </main>
     </div>
   );
