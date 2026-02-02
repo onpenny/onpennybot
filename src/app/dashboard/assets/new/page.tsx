@@ -9,9 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UploadComponent } from "@/components/upload/UploadComponent";
+import { useNotifications } from "@/components/notifications/Notifications";
 
 export default function NewAssetPage() {
   const router = useRouter();
+  const { showNotification } = useNotifications();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
@@ -23,6 +26,7 @@ export default function NewAssetPage() {
     location: "DOMESTIC",
     institution: "",
     accountNumber: "",
+    fileUrl: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,6 +54,12 @@ export default function NewAssetPage() {
         return;
       }
 
+      showNotification({
+        type: "success",
+        title: "資產創建成功",
+        message: `${formData.name} 已成功添加到您的資產列表`,
+      });
+
       router.push("/dashboard/assets");
     } catch (err) {
       setError("創建失敗，請稍後再試");
@@ -62,7 +72,7 @@ export default function NewAssetPage() {
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/assets" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-bold px-4 py-2 rounded-lg shadow-md">
                 OnHeritage
               </div>
@@ -75,7 +85,7 @@ export default function NewAssetPage() {
 
       <main className="container mx-auto px-4 py-12 max-w-3xl">
         <div className="mb-10">
-          <h1 className="text-5xl font-bold text-slate-800 mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold text-slate-800 mb-4">
             添加資產
           </h1>
           <p className="text-xl text-slate-600">
@@ -165,7 +175,7 @@ export default function NewAssetPage() {
 
                 <div className="space-y-4">
                   <Label htmlFor="currency" className="text-lg font-semibold text-slate-700">
-                    貨幣種類
+                    幣種類別
                   </Label>
                   <select
                     id="currency"
@@ -228,6 +238,28 @@ export default function NewAssetPage() {
                   rows={4}
                   className="text-lg border-2 border-slate-200 focus:border-indigo-500 resize-none"
                 />
+              </div>
+
+              {/* 文件上传 */}
+              <div className="space-y-4">
+                <Label className="text-lg font-semibold text-slate-700">
+                  相關文檔
+                </Label>
+                <UploadComponent
+                  onUploadSuccess={(url, fileName) => {
+                    setFormData({ ...formData, fileUrl: url });
+                    showNotification({
+                      type: "success",
+                      title: "文件上傳成功",
+                      message: `${fileName} 已成功上傳`,
+                    });
+                  }}
+                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
+                  maxSize={10}
+                />
+                <p className="text-sm text-slate-500 mt-2">
+                  上傳相關文檔，如銀行對賬單、保單、房產證等
+                </p>
               </div>
 
               {error && (
