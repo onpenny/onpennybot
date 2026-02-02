@@ -4,31 +4,45 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AdvancedSearch } from "@/components/search/AdvancedSearch";
 
 function AssetsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [assets, setAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    search: searchParams.get("search") || "",
-    category: searchParams.get("category") || "ALL",
-    location: searchParams.get("location") || "ALL",
-  });
+  const [showSearch, setShowSearch] = useState(true);
 
+  // 解析URL参数
   useEffect(() => {
-    fetchAssets();
-  }, [filters]);
+    const search = searchParams.get("search") || "";
+    const category = searchParams.get("category") || "ALL";
+    const location = searchParams.get("location") || "ALL";
+    const minValue = searchParams.get("minValue");
+    const maxValue = searchParams.get("maxValue");
+    const institution = searchParams.get("institution") || "";
 
-  const fetchAssets = async () => {
+    fetchAssets(search, category, location, minValue, maxValue, institution);
+  }, [searchParams]);
+
+  const fetchAssets = async (
+    search: string,
+    category: string,
+    location: string,
+    minValue: string,
+    maxValue: string,
+    institution: string
+  ) => {
     setLoading(true);
     const params = new URLSearchParams();
-    if (filters.search) params.set("search", filters.search);
-    if (filters.category !== "ALL") params.set("category", filters.category);
-    if (filters.location !== "ALL") params.set("location", filters.location);
+    if (search) params.set("search", search);
+    if (category !== "ALL") params.set("category", category);
+    if (location !== "ALL") params.set("location", location);
+    if (minValue) params.set("minValue", minValue);
+    if (maxValue) params.set("maxValue", maxValue);
+    if (institution) params.set("institution", institution);
 
     const response = await fetch(`/api/assets?${params.toString()}`);
     const data = await response.json();
@@ -36,17 +50,29 @@ function AssetsContent() {
     setLoading(false);
   };
 
-  const updateFilters = (key: string, value: string) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
-
+  const handleSearch = (filters: any) => {
     const params = new URLSearchParams();
-    if (newFilters.search) params.set("search", newFilters.search);
-    if (newFilters.category !== "ALL") params.set("category", newFilters.category);
-    if (newFilters.location !== "ALL") params.set("location", newFilters.location);
+    if (filters.name) params.set("search", filters.name);
+    if (filters.category && filters.category !== "ALL") params.set("category", filters.category);
+    if (filters.location && filters.location !== "ALL") params.set("location", filters.location);
+    if (filters.minValue) params.set("minValue", filters.minValue);
+    if (filters.maxValue) params.set("maxValue", filters.maxValue);
+    if (filters.institution) params.set("institution", filters.institution);
 
     router.push(`/dashboard/assets?${params.toString()}`);
   };
+
+  const handleReset = () => {
+    router.push("/dashboard/assets");
+  };
+
+  // 判断是否在搜索状态
+  const hasFilters = searchParams.get("search") || 
+                      searchParams.get("category") !== "ALL" ||
+                      searchParams.get("location") !== "ALL" ||
+                      searchParams.get("minValue") ||
+                      searchParams.get("maxValue") ||
+                      searchParams.get("institution");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
@@ -62,18 +88,28 @@ function AssetsContent() {
               <span className="text-slate-400">/</span>
               <span className="text-lg font-semibold text-slate-700">資產管理</span>
             </div>
-            <Link href="/dashboard/assets/new">
-              <Button className="h-12 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg transition-all">
-                + 添加資產
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSearch(!showSearch)}
+                className="border-2 border-slate-200 hover:border-indigo-300"
+              >
+                {showSearch ? "收起搜索" : "展開搜索"}
               </Button>
-            </Link>
+              <Link href="/dashboard/assets/new">
+                <Button className="h-12 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg transition-all">
+                  + 添加資產
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-800 mb-3">
+      <main className="container mx-auto px-4 py-12">
+        <div className="mb-10">
+          <h1 className="text-5xl font-bold text-slate-800 mb-4">
             資產管理
           </h1>
           <p className="text-xl text-slate-600">
@@ -81,86 +117,68 @@ function AssetsContent() {
           </p>
         </div>
 
-        {/* 搜索和过滤器 */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-          <div className="grid md:grid-cols-3 gap-6">
-            <Input
-              placeholder="搜索資產名稱、機構..."
-              value={filters.search}
-              onChange={(e) => updateFilters("search", e.target.value)}
-              className="h-12 text-lg border-2 border-slate-200 focus:border-indigo-500"
+        {/* 搜索栏 */}
+        {showSearch && (
+          <div className="mb-8">
+            <AdvancedSearch
+              onSearch={handleSearch}
+              onReset={handleReset}
             />
-
-            <select
-              value={filters.category}
-              onChange={(e) => updateFilters("category", e.target.value)}
-              className="flex h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              <option value="ALL">全部類別</option>
-              <option value="BANK">銀行賬戶</option>
-              <option value="INSURANCE">保險</option>
-              <option value="BROKERAGE">證券賬戶</option>
-              <option value="FUND">基金</option>
-              <option value="REAL_ESTATE">不動產</option>
-              <option value="CRYPTOCURRENCY">虛擬貨幣</option>
-              <option value="STOCK">股票</option>
-              <option value="COLLECTION">收藏品</option>
-              <option value="INTELLECTUAL_PROPERTY">知識產權</option>
-              <option value="OTHER">其他</option>
-            </select>
-
-            <select
-              value={filters.location}
-              onChange={(e) => updateFilters("location", e.target.value)}
-              className="flex h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              <option value="ALL">全部位置</option>
-              <option value="DOMESTIC">本地</option>
-              <option value="OVERSEAS">海外</option>
-            </select>
           </div>
-        </div>
+        )}
 
         {/* 过滤结果统计 */}
-        <div className="mb-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-full">
-            <span className="text-sm text-slate-600">找到</span>
-            <span className="text-2xl font-bold text-indigo-600">{assets.length}</span>
-            <span className="text-sm text-slate-600">個資產</span>
+        <div className="mb-6 flex items-center justify-between">
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-full border-2 border-white shadow-md">
+            <span className="text-base text-slate-600">找到</span>
+            <span className="text-3xl font-bold text-indigo-600">{assets.length}</span>
+            <span className="text-base text-slate-600">個資產</span>
           </div>
+          {hasFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="border-2 border-slate-200 hover:border-indigo-300"
+            >
+              清除篩選
+            </Button>
+          )}
         </div>
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-500 border-t-transparent"></div>
           </div>
         ) : assets.length === 0 ? (
           <Card className="border-2 border-slate-200">
-            <CardContent className="flex flex-col items-center justify-center py-20">
-              <div className="bg-gradient-to-br from-slate-100 to-slate-200 w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg">
-                <span className="text-5xl">📦</span>
+            <CardContent className="flex flex-col items-center justify-center py-24">
+              <div className="bg-gradient-to-br from-slate-100 to-slate-200 w-32 h-32 rounded-full flex items-center justify-center mb-8 shadow-lg">
+                <span className="text-6xl">📦</span>
               </div>
-              <h3 className="text-2xl font-semibold text-slate-800 mb-3">
+              <h3 className="text-3xl font-semibold text-slate-800 mb-4">
                 沒有找到資產
               </h3>
-              <p className="text-lg text-slate-600 mb-6">
-                調整搜索條件或添加新資產
+              <p className="text-xl text-slate-600 mb-8 max-w-md text-center">
+                {hasFilters ? "嘗試調整搜索條件或清除篩選" : "開始添加您的第一個資產"}
               </p>
-              <Link href="/dashboard/assets/new">
-                <Button className="h-14 px-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg transition-all">
-                  添加第一個資產
-                </Button>
-              </Link>
+              {!hasFilters && (
+                <Link href="/dashboard/assets/new">
+                  <Button className="h-16 px-10 text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-xl transition-all">
+                    添加第一個資產
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {assets.map((asset) => (
               <Link href={`/dashboard/assets/${asset.id}/edit`} key={asset.id} className="group">
-                <Card className="h-full border-2 border-slate-100 hover:border-indigo-300 hover:shadow-xl transition-all hover:-translate-y-1 bg-white">
+                <Card className="h-full border-2 border-slate-100 hover:border-indigo-300 hover:shadow-2xl transition-all hover:-translate-y-1 bg-white">
                   <CardHeader>
                     <div className="flex items-start justify-between">
-                      <CardTitle className="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                      <CardTitle className="text-2xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
                         {asset.name}
                       </CardTitle>
                       <Badge 
@@ -175,9 +193,7 @@ function AssetsContent() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-base text-slate-600 font-medium">類別</span>
-                        <Badge variant="outline" className="text-sm">
-                          {asset.category}
-                        </Badge>
+                        <Badge variant="outline" className="text-sm">{asset.category}</Badge>
                       </div>
                       {asset.value && (
                         <div className="flex justify-between items-center">
@@ -193,6 +209,13 @@ function AssetsContent() {
                           <span className="text-base text-slate-700">{asset.institution}</span>
                         </div>
                       )}
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Link href={`/dashboard/assets/${asset.id}/edit`} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all">
+                          編輯
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>
