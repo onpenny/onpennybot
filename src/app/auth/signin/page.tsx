@@ -4,18 +4,32 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useNotifications } from "@/components/notifications/Notifications";
 
 export default function SignInPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { showNotification } = useNotifications();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("registered") === "true") {
+      showNotification({
+        type: "success",
+        title: "註冊成功",
+        message: "歡迎加入 OnHeritage！請登入您的賬戶。",
+      });
+    }
+  }, [searchParams, showNotification]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +45,28 @@ export default function SignInPage() {
 
       if (result?.error) {
         setError(result.error);
+        showNotification({
+          type: "error",
+          title: "登入失敗",
+          message: result.error,
+        });
       } else {
+        showNotification({
+          type: "success",
+          title: "登入成功",
+          message: "歡迎回來！",
+        });
         router.push("/dashboard");
         router.refresh();
       }
     } catch (err) {
-      setError("登入失敗，請稍後再試");
+      const errorMessage = "登入失敗，請稍後再試";
+      setError(errorMessage);
+      showNotification({
+        type: "error",
+        title: "登入失敗",
+        message: errorMessage,
+      });
     } finally {
       setLoading(false);
     }
@@ -47,7 +77,13 @@ export default function SignInPage() {
     try {
       await signIn("google", { callbackUrl: "/dashboard" });
     } catch (err) {
-      setError("Google 登入失敗，請稍後再試");
+      const errorMessage = "Google 登入失敗，請稍後再試";
+      setError(errorMessage);
+      showNotification({
+        type: "error",
+        title: "Google 登入失敗",
+        message: errorMessage,
+      });
       setLoading(false);
     }
   };
@@ -149,14 +185,14 @@ export default function SignInPage() {
             </svg>
             使用 Google 登入
           </Button>
-          <div className="text-center mt-6">
-            <p className="text-slate-600">
-              還沒有賬號？{" "}
-              <Link href="/auth/signup" className="text-indigo-600 font-semibold hover:text-indigo-700 hover:underline transition-colors">
-                立即註冊
-              </Link>
-            </p>
-          </div>
+        </CardContent>
+        <CardContent className="flex justify-center pb-8 pt-6 border-t border-slate-100">
+          <p className="text-slate-600">
+            還沒有賬戶？{" "}
+            <Link href="/auth/signup" className="text-indigo-600 font-semibold hover:text-indigo-700 hover:underline transition-colors">
+              立即註冊
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>
