@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,23 @@ export default async function DashboardPage() {
   if (!session?.user) {
     redirect("/auth/signin");
   }
+
+  // 并行获取所有统计数据
+  const [assetsCount, familyCount, willsCount, inheritanceCount] = await Promise.all([
+    prisma.asset.count({ where: { userId: session.user.id } }),
+    prisma.familyMember.count({ where: { userId: session.user.id } }),
+    prisma.will.count({ where: { userId: session.user.id } }),
+    prisma.inheritance.count({ where: { userId: session.user.id } }),
+  ]);
+
+  // 获取资产总价值
+  const assets = await prisma.asset.findMany({
+    where: { userId: session.user.id },
+    select: { value: true, currency: true },
+  });
+
+  const totalValue = assets.reduce((sum, asset) => sum + (asset.value || 0), 0);
+  const currency = assets.length > 0 ? assets[0].currency : "MOP";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
@@ -25,14 +43,14 @@ export default async function DashboardPage() {
               <span className="text-slate-400">/</span>
               <span className="text-lg font-semibold text-slate-700">儀表板</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <span className="text-sm text-slate-500 hidden md:block">
-                歡迎回來，{session.user.name}
+                {session.user.name}
               </span>
               <form action="/api/auth/signout" method="POST">
                 <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-slate-100">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 17V7m0 10l2-2m-2 2l-2-2M9 19V5m0 6h6a3 3 0 013 0v10a3 3 0 013-3h-6a3 3 0 010-3v-10a3 3 0 010 3h6a3 3 0 013 0v10a3 3 0 013-3h-6a3 3 0 010-3V4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 17V7m0 10l2-2m-2 2l-2-2M9 19V5m0 10h6a3 3 0 013 0v-10a3 3 0 01-3 0h-6a3 3 0 010-3v10a3 3 0 013 0h-6a3 3 0 010-3V4" />
                   </svg>
                 </Button>
               </form>
@@ -42,9 +60,9 @@ export default async function DashboardPage() {
       </header>
 
       <main className="container mx-auto px-4 py-12">
-        <div className="mb-12">
-          <h1 className="text-5xl font-bold text-slate-800 mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            歡迎回來，{session.user.name}
+        <div className="mb-10">
+          <h1 className="text-5xl font-bold text-slate-800 mb-4">
+            歡迎回來，<span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{session.user.name}</span>
           </h1>
           <p className="text-xl text-slate-600">
             開始管理您的資產與遺產規劃
@@ -52,23 +70,55 @@ export default async function DashboardPage() {
         </div>
 
         {/* 统计概览 */}
-        <Card className="mb-10 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-0">
+        <Card className="mb-8 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-0">
           <CardHeader>
-            <CardTitle className="text-3xl font-bold">總覽</CardTitle>
+            <CardTitle className="text-3xl font-bold flex items-center gap-3">
+              <span>📊</span>
+              總覽
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center p-8 bg-white rounded-2xl shadow-md">
-                <div className="text-6xl font-bold text-indigo-600 mb-2">0</div>
-                <p className="text-slate-600 font-medium text-lg">資產</p>
+              <div className="text-center p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow">
+                <div className="text-7xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
+                  {assetsCount}
+                </div>
+                <p className="text-slate-600 font-medium text-xl">資產</p>
+                <p className="text-slate-400 text-sm mt-1">
+                  總價值：{currency} {totalValue.toLocaleString()}
+                </p>
               </div>
-              <div className="text-center p-8 bg-white rounded-2xl shadow-md">
-                <div className="text-6xl font-bold text-emerald-600 mb-2">0</div>
-                <p className="text-slate-600 font-medium text-lg">家族成員</p>
+              <div className="text-center p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow">
+                <div className="text-7xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
+                  {familyCount}
+                </div>
+                <p className="text-slate-600 font-medium text-xl">家族成員</p>
               </div>
-              <div className="text-center p-8 bg-white rounded-2xl shadow-md">
-                <div className="text-6xl font-bold text-amber-600 mb-2">0</div>
-                <p className="text-slate-600 font-medium text-lg">遺囑</p>
+              <div className="text-center p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow">
+                <div className="text-7xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-3">
+                  {willsCount}
+                </div>
+                <p className="text-slate-600 font-medium text-xl">遺囑</p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8 mt-6">
+              <div className="text-center p-6 bg-white rounded-2xl shadow-md">
+                <div className="text-4xl font-bold text-purple-600 mb-2">
+                  {inheritanceCount}
+                </div>
+                <p className="text-slate-600 font-medium text-lg">繼承規則</p>
+              </div>
+              <div className="text-center p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border-2 border-purple-100">
+                <div className="text-4xl font-bold text-slate-800 mb-2">
+                  {assetsCount > 0 ? Math.round(totalValue / assetsCount) : 0}
+                </div>
+                <p className="text-slate-600 text-sm">平均資產價值</p>
+              </div>
+              <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border-2 border-blue-100">
+                <div className="text-4xl font-bold text-slate-800 mb-2">
+                  {new Date().toLocaleDateString("zh-TW")}
+                </div>
+                <p className="text-slate-600 text-sm">上次更新</p>
               </div>
             </div>
           </CardContent>
@@ -88,6 +138,12 @@ export default async function DashboardPage() {
                 <p className="text-slate-600 text-lg leading-relaxed">
                   添加和管理您的各類資產
                 </p>
+                <div className="mt-4 flex items-center gap-2 text-sm text-indigo-600 font-semibold">
+                  <span>{assetsCount} 個資產</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7-7" />
+                  </svg>
+                </div>
               </CardContent>
             </Card>
           </Link>
@@ -104,6 +160,12 @@ export default async function DashboardPage() {
                 <p className="text-slate-600 text-lg leading-relaxed">
                   建立家族成員與關係
                 </p>
+                <div className="mt-4 flex items-center gap-2 text-sm text-blue-600 font-semibold">
+                  <span>{familyCount} 位成員</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7-7" />
+                  </svg>
+                </div>
               </CardContent>
             </Card>
           </Link>
@@ -120,6 +182,12 @@ export default async function DashboardPage() {
                 <p className="text-slate-600 text-lg leading-relaxed">
                   創建和管理您的遺囑
                 </p>
+                <div className="mt-4 flex items-center gap-2 text-sm text-amber-600 font-semibold">
+                  <span>{willsCount} 份遺囑</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7-7" />
+                  </svg>
+                </div>
               </CardContent>
             </Card>
           </Link>
@@ -136,21 +204,27 @@ export default async function DashboardPage() {
                 <p className="text-slate-600 text-lg leading-relaxed">
                   設置資產分配規則
                 </p>
+                <div className="mt-4 flex items-center gap-2 text-sm text-purple-600 font-semibold">
+                  <span>{inheritanceCount} 條規則</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7-7" />
+                  </svg>
+                </div>
               </CardContent>
             </Card>
           </Link>
         </div>
 
-        {/* 开始提示 */}
-        {session.user.name === "OnPenny Test User" || session.user.email === "onpenny@gmail.com" ? (
+        {/* 开始提示 - 只对新用户显示 */}
+        {(session.user.name === "OnPenny Test User" || session.user.email === "onpenny@gmail.com" || assetsCount === 0) && (
           <Card className="bg-gradient-to-r from-amber-50 to-amber-100 border-2 border-amber-200">
             <CardHeader>
               <CardTitle className="text-2xl font-bold text-amber-800 flex items-center gap-3">
-                <span>💡</span>
+                <span className="text-4xl">🚀</span>
                 歡迎開始使用
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="bg-white p-6 rounded-2xl">
                 <p className="text-slate-700 font-semibold text-lg mb-4">
                   您還沒有添加任何資產，這是開始的好地方！
@@ -194,19 +268,19 @@ export default async function DashboardPage() {
               </div>
               <div className="flex gap-4">
                 <Link href="/dashboard/assets/new" className="flex-1">
-                  <Button className="h-14 text-lg font-semibold w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:shadow-lg transition-all">
+                  <Button className="h-16 text-xl font-bold w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:shadow-xl hover:scale-105 transition-all">
                     立即添加資產
                   </Button>
                 </Link>
                 <Link href="/dashboard/family/new" className="flex-1">
-                  <Button variant="outline" className="h-14 text-lg font-semibold w-full border-2 border-amber-300 hover:border-amber-400 hover:bg-amber-50 transition-all">
+                  <Button variant="outline" className="h-16 text-xl font-bold w-full border-2 border-amber-300 hover:border-amber-400 hover:bg-amber-50 transition-all">
                     添加家族成員
                   </Button>
                 </Link>
               </div>
             </CardContent>
           </Card>
-        ) : null}
+        )}
       </main>
     </div>
   );
