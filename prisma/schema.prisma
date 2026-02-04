@@ -1,222 +1,29 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
-
-// ============================================
-// User & Authentication
-// ============================================
-
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  passwordHash  String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  familyMembers FamilyMember[]
-  assets        Asset[]
-  wills         Will[]
-  inheritances  Inheritance[]  @relation("Heir")
-  notifications Notification[]
-}
-
-// ============================================
-// Family Tree
-// ============================================
-
-model FamilyMember {
-  id           String           @id @default(cuid())
-  userId       String
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name         String
-  dateOfBirth  DateTime?
-  dateOfDeath  DateTime?
-  relationship RelationshipType
-  isAlive      Boolean          @default(true)
-  notes        String?
-  parentId     String?
-  parent       FamilyMember?    @relation("FamilyTree", fields: [parentId], references: [id])
-  children     FamilyMember[]   @relation("FamilyTree")
-  spouseId     String?
-  spouse       FamilyMember?    @relation("Spouses", fields: [spouseId], references: [id])
-  spousedBy    FamilyMember[]   @relation("Spouses")
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-
-  inheritances Inheritance[]
+model Reminder {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // "ASSET_UPDATE", "INSURANCE_EXPIRED", "ID_CARD_EXPIRED", "BIRTHDAY"
+  title       String
+  message     String
+  assetId     String?  // Link to asset
+  memberId    String?  // Link to family member
+  remindAt    DateTime @default(now())
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([userId])
-  @@index([parentId])
+  @@index([userId, type])
 }
 
-enum RelationshipType {
-  BLOOD
-  ADOPTED
-  MARRIAGE
-  PARTNER
-}
-
-// ============================================
-// Assets
-// ============================================
-
-model Asset {
-  id            String         @id @default(cuid())
-  userId        String
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category      AssetCategory
-  name          String
-  description   String?
-  value         Float?
-  currency      String?        @default("USD")
-  location      AssetLocation
-  institution   String?
-  accountNumber String
-  isEncrypted   Boolean        @default(true)
-  documents     String?        // JSON string of S3 URLs
-  tags          String?        // JSON string of tags
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  inheritances  Inheritance[]
+model ReminderPreferences {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  assetUpdateDays Int      @default(90)  // days before reminder
+  insuranceExpiryDays Int    @default(30) // days before reminder
+  idCardExpiryDays Int       @default(60) // days before reminder
+  birthdayReminderDays Int    @default(7)  // days before birthday
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([userId])
-  @@index([category])
-  @@index([location])
-}
-
-enum AssetCategory {
-  BANK
-  INSURANCE
-  BROKERAGE
-  FUND
-  REAL_ESTATE
-  CRYPTOCURRENCY
-  STOCK
-  COLLECTION
-  INTELLECTUAL_PROPERTY
-  OTHER
-}
-
-enum AssetLocation {
-  DOMESTIC
-  OVERSEAS
-}
-
-// ============================================
-// Inheritance & Distribution
-// ============================================
-
-model Inheritance {
-  id                String            @id @default(cuid())
-  assetId           String
-  asset             Asset             @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  heirId            String
-  heir              FamilyMember      @relation(fields: [heirId], references: [id])
-  userId            String
-  user              User              @relation("Heir", fields: [userId], references: [id])
-  percentage        Float
-  conditions        String?
-  status            InheritanceStatus @default(PENDING)
-  notificationSent  Boolean           @default(false)
-  notificationSentAt DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
-  @@index([assetId])
-  @@index([heirId])
-  @@index([userId])
-  @@index([status])
-}
-
-enum InheritanceStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  DISPUTED
-}
-
-// ============================================
-// Will Management
-// ============================================
-
-model Will {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title          String
-  content        String
-  jurisdiction   String?
-  isSigned       Boolean  @default(false)
-  signedAt       DateTime?
-  isWitnessed    Boolean  @default(false)
-  documentUrl    String?
-  blockchainHash String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@index([userId])
-}
-
-// ============================================
-// Notifications
-// ============================================
-
-model Notification {
-  id        String           @id @default(cuid())
-  userId    String
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      NotificationType
-  title     String
-  message   String
-  isRead    Boolean          @default(false)
-  createdAt DateTime         @default(now())
-
-  @@index([userId])
-  @@index([isRead])
-}
-
-enum NotificationType {
-  INHERITANCE_START
-  INHERITANCE_COMPLETED
-  DOCUMENT_EXPIRY
-  SYSTEM
-}
-
-// ============================================
-// Donation & Charity
-// ============================================
-
-model Donation {
-  id           String         @id @default(cuid())
-  userId       String
-  assetId      String
-  organization String
-  amount       Float?
-  currency     String?        @default("USD")
-  status       DonationStatus @default(PENDING)
-  documentUrl  String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  @@index([userId])
-  @@index([assetId])
-  @@index([status])
-}
-
-enum DonationStatus {
-  PENDING
-  APPROVED
-  EXECUTED
-  CANCELLED
 }
