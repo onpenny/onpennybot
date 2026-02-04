@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,34 +9,39 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNotifications } from "@/components/notifications/Notifications";
+import { FamilyTree } from "@/components/family/FamilyTree";
 
 export default function FamilyPage() {
   const router = useRouter();
   const { showNotification } = useNotifications();
+  const searchParams = useSearchParams();
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(true);
-  const [filters, setFilters] = useState({
-    search: "",
-    relationship: "ALL",
-    isAlive: "ALL",
-  });
+  const [showFilters, setShowFilters] = useState(false);
+  const [showTree, setShowTree] = useState(true);
+  const [viewMode, setViewMode] = useState<"list" | "tree">("tree");
 
   useEffect(() => {
     fetchMembers();
-  }, []);
+  }, [searchParams]);
 
   const fetchMembers = async () => {
+    setLoading(true);
+    const search = searchParams.get("search") || "";
+    const relationship = searchParams.get("relationship") || "ALL";
+    const isAlive = searchParams.get("isAlive") || "ALL";
+
     try {
-      const response = await fetch("/api/family");
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (relationship !== "ALL") params.set("relationship", relationship);
+      if (isAlive !== "ALL") params.set("isAlive", isAlive);
+
+      const response = await fetch(`/api/family?${params.toString()}`);
       const data = await response.json();
       setMembers(data.members || []);
     } catch (err) {
-      showNotification({
-        type: "error",
-        title: "加載失敗",
-        message: "無法獲取家族成員列表",
-      });
+      console.error("Failed to fetch members:", err);
     } finally {
       setLoading(false);
     }
@@ -70,23 +76,17 @@ export default function FamilyPage() {
     }
   };
 
-  const filteredMembers = members.filter((member) => {
-    if (filters.search && !member.name.toLowerCase().includes(filters.search.toLowerCase())) {
-      return false;
-    }
-    if (filters.relationship !== "ALL" && member.relationship !== filters.relationship) {
-      return false;
-    }
-    if (filters.isAlive === "ALIVE" && !member.isAlive) {
-      return false;
-    }
-    if (filters.isAlive === "DEAD" && member.isAlive) {
-      return false;
-    }
-    return true;
-  });
+  const handleToggleTree = () => {
+    setViewMode(viewMode === "tree" ? "list" : "tree");
+  };
 
-  const hasFilters = filters.search || filters.relationship !== "ALL" || filters.isAlive !== "ALL";
+  const getStatusBadge = (member: any) => {
+    if (member.isAlive) {
+      return <Badge className="bg-emerald-500 text-white">在世</Badge>;
+    } else {
+      return <Badge className="bg-slate-500 text-white">逝世</Badge>;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -106,10 +106,11 @@ export default function FamilyPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="border-2 border-slate-200 hover:border-blue-300"
+                onClick={handleToggleTree}
+                className={viewMode === "tree" ? "bg-indigo-50 border-indigo-300" : "border-slate-200"}
               >
-                {showFilters ? "收起搜索" : "展開搜索"}
+                <span className="text-lg">{viewMode === "tree" ? "📊" : "📋"}</span>
+                {viewMode === "tree" ? "樹形圖" : "列表"}
               </Button>
               <Link href="/dashboard/family/new">
                 <Button className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-lg transition-all">
@@ -127,72 +128,38 @@ export default function FamilyPage() {
             家族譜系
           </h1>
           <p className="text-xl text-slate-600">
-            管理您的家族成員與關係
+            {viewMode === "tree" ? "查看您的家族關係樹形圖" : "管理您的家族成員與關係"}
           </p>
         </div>
 
-        {/* 搜索栏 */}
-        {showFilters && (
-          <Card className="mb-8 border-2 border-slate-100 bg-white">
-            <CardContent className="p-6">
-              <div className="grid md:grid-cols-3 gap-6">
-                <Input
-                  placeholder="搜索成員姓名..."
-                  value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  className="h-12 text-lg border-2 border-slate-200 focus:border-blue-500"
-                />
+        {viewMode === "tree" && members.length > 0 ? (
+          <FamilyTree family={members} />
+        ) : null}
 
-                <select
-                  value={filters.relationship}
-                  onChange={(e) => setFilters({ ...filters, relationship: e.target.value })}
-                  className="flex h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  <option value="ALL">全部關係</option>
-                  <option value="BLOOD">血緣關係</option>
-                  <option value="ADOPTED">收養關係</option>
-                  <option value="MARRIAGE">婚姻關係</option>
-                  <option value="PARTNER">伴侶</option>
-                </select>
-
-                <select
-                  value={filters.isAlive}
-                  onChange={(e) => setFilters({ ...filters, isAlive: e.target.value })}
-                  className="flex h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  <option value="ALL">全部狀態</option>
-                  <option value="ALIVE">在世</option>
-                  <option value="DEAD">已逝世</option>
-                </select>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 统计信息 */}
         <div className="mb-6 flex items-center justify-between">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-full border-2 border-white shadow-md">
-            <span className="text-lg text-slate-600">家族成員</span>
-            <span className="text-3xl font-bold text-blue-600">{filteredMembers.length}</span>
+            <span className="text-base text-slate-600">家族成員</span>
+            <span className="text-3xl font-bold text-blue-600">{members.length}</span>
             <span className="text-base text-slate-600">位</span>
           </div>
-          {hasFilters && (
+          <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setFilters({ search: "", relationship: "ALL", isAlive: "ALL" })}
-              className="border-2 border-slate-200 hover:border-blue-300"
+              onClick={() => setViewMode(viewMode === "tree" ? "list" : "tree")}
+              className={viewMode === "tree" ? "bg-blue-50 border-blue-300" : "border-slate-200"}
             >
-              清除篩選
+              {viewMode === "tree" ? "📋" : "📊"}
+              {viewMode === "tree" ? "列表視圖" : "樹形視圖"}
             </Button>
-          )}
+          </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-24">
-            <div className="animate-spin rounded-full h-20 w-20 border-4 border-blue-500 border-t-transparent"></div>
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
           </div>
-        ) : filteredMembers.length === 0 ? (
+        ) : members.length === 0 ? (
           <Card className="border-2 border-slate-200">
             <CardContent className="flex flex-col items-center justify-center py-24">
               <div className="bg-gradient-to-br from-slate-100 to-slate-200 w-32 h-32 rounded-full flex items-center justify-center mb-8 shadow-lg">
@@ -202,20 +169,18 @@ export default function FamilyPage() {
                 還沒有家族成員
               </h3>
               <p className="text-xl text-slate-600 mb-8 max-w-md text-center">
-                {hasFilters ? "調整搜索條件或清除篩選" : "開始添加您的第一個家族成員"}
+                開始添加您的第一個家族成員，建立完整的家族譜系
               </p>
-              {!hasFilters && (
-                <Link href="/dashboard/family/new">
-                  <Button className="h-16 px-10 text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-xl transition-all">
-                    添加第一個成員
-                  </Button>
-                </Link>
-              )}
+              <Link href="/dashboard/family/new">
+                <Button className="h-16 px-10 text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-xl transition-all">
+                  添加第一個成員
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredMembers.map((member) => (
+            {members.map((member) => (
               <Link href={`/dashboard/family/${member.id}/edit`} key={member.id} className="group">
                 <Card className="h-full border-2 border-slate-100 hover:border-blue-300 hover:shadow-2xl transition-all hover:-translate-y-1 bg-white">
                   <CardHeader className="pb-4">
@@ -228,12 +193,7 @@ export default function FamilyPage() {
                           {member.name}
                         </CardTitle>
                       </div>
-                      <Badge 
-                        variant={member.isAlive ? "default" : "secondary"}
-                        className={member.isAlive ? "bg-emerald-500 text-white" : "bg-slate-500 text-white"}
-                      >
-                        {member.isAlive ? "在世" : "逝世"}
-                      </Badge>
+                      {getStatusBadge(member)}
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -263,30 +223,39 @@ export default function FamilyPage() {
                           </span>
                         </div>
                       )}
+                      {member.spouse && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-base text-slate-600 font-medium">配偶</span>
+                          <span className="text-base text-slate-700 font-semibold">
+                            {member.spouse.name}
+                          </span>
+                        </div>
+                      )}
+                      {member.parent && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-base text-slate-600 font-medium">父母</span>
+                          <span className="text-base text-slate-700 font-semibold">
+                            {member.parent.name}
+                          </span>
+                        </div>
+                      )}
                       {member.notes && (
                         <div className="pt-3 border-t border-slate-100 mt-3">
-                          <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
+                          <p className="text-sm text-slate-500 leading-relaxed">
                             備註：{member.notes}
                           </p>
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-3 mt-6">
+                    <div className="mt-6 flex gap-3">
+                      <Link href={`/dashboard/family/${member.id}/edit`} className="flex-1">
+                        <Button variant="outline" className="w-full h-12 border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all">
+                          編輯
+                        </Button>
+                      </Link>
                       <Button
-                        type="button"
                         variant="outline"
-                        className="w-full h-12 border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          router.push(`/dashboard/family/${member.id}/edit`);
-                        }}
-                      >
-                        編輯
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full h-12 border-2 border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 transition-all"
+                        className="w-full h-12 border-2 border-slate-200 hover:border-red-300 hover:bg-red-50 text-red-600 transition-all"
                         onClick={(e) => {
                           e.preventDefault();
                           handleDelete(member.id, member.name);
